@@ -1,30 +1,31 @@
-/* global EventEmitter: true */
-EventEmitter = function(options) {
-  var self = this;
+import EventEmitterEvent from 'events'
+
+const EventEmitter = options => {
+  const self = this
   // Check that the user uses "new" keyword for api consistency
-  if (! (self instanceof EventEmitter)) {
-    throw new Error('use "new" to construct an EventEmitter');
+  if (! (self instanceof EventEmitterEvent)) {
+    throw new Error('use "new" to construct an EventEmitter')
   }
 
-  options = options || {};
+  options = options || {}
 
   // Hidden scope
   self._eventEmitter = {
     onListeners: {},
     onceListeners: {},
     maxListeners: options.maxListeners || 10
-  };
-};
+  }
+}
 
-var _checkListenerLimit = function(eventName, listenerCount) {
-  var self = this;
+const _checkListenerLimit = function(eventName, listenerCount) {
+  const self = this;
   // Check if we are to send a warning
   if (self._eventEmitter.maxListeners && listenerCount > self._eventEmitter.maxListeners) {
     // Return string
     return 'warning: possible EventEmitter memory leak detected. ' +
-        listenerCount + ' listeners added on event "' + eventName +
-        '". Use emitter.setMaxListeners() to increase limit. (' +
-        self._eventEmitter.maxListeners + ')';
+      listenerCount + ' listeners added on event "' + eventName +
+      '". Use emitter.setMaxListeners() to increase limit. (' +
+      self._eventEmitter.maxListeners + ')';
 
   }
 };
@@ -33,14 +34,14 @@ var _checkListenerLimit = function(eventName, listenerCount) {
 // added for a particular event. This is a useful default which helps finding
 // memory leaks. Obviously not all Emitters should be limited to 10. This function
 // allows that to be increased. Set to zero for unlimited.
-EventEmitter.prototype.setMaxListeners = function(n) {
-  this._eventEmitter.maxListeners = n;
-};
+EventEmitter.prototype.setMaxListeners = n => {
+  this._eventEmitter.maxListeners = n
+}
 
-var _addToList = function(list, eventName, listener) {
+const _addToList = (list, eventName, listener) => {
   // Check that we have a container for the event, Create listener array
   if (typeof list[eventName] === 'undefined') {
-    list[eventName] = [];
+    list[eventName] = []
   }
 
   // Make sure the listener is not in there already?
@@ -48,141 +49,143 @@ var _addToList = function(list, eventName, listener) {
   // list[eventName] = _.without(list[eventName], listener);
 
   // Add the listener and Check the limit
-  return _checkListenerLimit.apply(this, [eventName, list[eventName].push(listener)]);
-};
+  return _checkListenerLimit.apply(this, [eventName, list[eventName].push(listener)])
+}
 
 // Adds a listener to the end of the listeners array for the specified event.
 // server.on('connection', function (stream) {
 //   console.log('someone connected!');
 // });
 // Returns emitter, so calls can be chained.
-EventEmitter.prototype.on = function(eventName, listener) {
-  var warn = _addToList.apply(this, [this._eventEmitter.onListeners, eventName, listener]);
+EventEmitter.prototype.on = (eventName, listener) => {
+  const warn = _addToList.apply(this, [this._eventEmitter.onListeners, eventName, listener])
 
   // Warn if needed
   if (warn) {
-    console.warn((new Error(warn)).stack);
+    console.warn((new Error(warn)).stack)
   }
 
   // Return the emitter
-  return this;
-};
+  return this
+}
 
 // Adds a one time listener for the event. This listener is invoked
 // only the next time the event is fired, after which it is removed.
-EventEmitter.prototype.once = function(eventName, listener) {
-  var warn = _addToList.apply(this, [this._eventEmitter.onceListeners, eventName, listener]);
+EventEmitter.prototype.once = (eventName, listener) => {
+  const warn = _addToList.apply(this, [this._eventEmitter.onceListeners, eventName, listener])
 
   // Warn if needed
   if (warn) {
-    console.warn((new Error(warn)).stack);
+    console.warn((new Error(warn)).stack)
   }
 
   // Return the emitter
-  return this;
-};
+  return this
+}
 
-var _runCallbacks = function(listenerArray, args) {
-  var self = this;
+const _runCallbacks = (listenerArray, args) => {
+  const self = this
   // count of listeners triggered
-  var count = 0;
+  let count = 0
   // Check if we have anything to work with
   if (typeof listenerArray !== 'undefined') {
     // Try to iterate over the listeners
     listenerArray.forEach(function(listener) {
       // Count listener calls
-      count++;
+      count++
       // Send the job to the eventloop
-      listener.apply(self, args);
-    });
+      listener.apply(self, args)
+    })
   }
 
   // Return the count
-  return count;
-};
+  return count
+}
 
 // emitter.emit(event, [arg1], [arg2], [...])#
 // Execute each of the listeners in order with the supplied arguments.
 EventEmitter.prototype.emit = function(eventName /* arguments */) {
-  var self = this;
+  const self = this
   // make argument list to pass on to listeners
-  var args = Array.prototype.slice.call(arguments, 1);
+  const args = Array.prototype.slice.call(arguments, 1)
 
   // Count listeners triggered
-  var count = 0;
+  let count = 0
 
   // Swap once list
-  var onceList = self._eventEmitter.onceListeners[eventName];
+  const onceList = self._eventEmitter.onceListeners[eventName]
 
   // Empty the once list
-  self._eventEmitter.onceListeners[eventName] = [];
+  self._eventEmitter.onceListeners[eventName] = []
 
   // Trigger on listeners
-  count += _runCallbacks.call(self, self._eventEmitter.onListeners[eventName], args);
+  count += _runCallbacks.call(self, self._eventEmitter.onListeners[eventName], args)
 
   // Trigger once listeners
-  count += _runCallbacks.call(self, onceList, args);
+  count += _runCallbacks.call(self, onceList, args)
 
   // Returns true if event had listeners, false otherwise.
-  return (count > 0);
-};
+  return (count > 0)
+}
 
 // XXX: When removing a listener in node js it only removes one - not all.
-var _withoutOne = function(list, obj) {
-  var found = false;
-  var result = [];
+const _withoutOne = (list, obj) => {
+  let found = false
+  const result = []
 
   // Iterate over listeners
-  for (var i = 0; i < list.length; i++) {
+  for (let i = 0; i < list.length; i++) {
     // Check if we found one...
     if (!found && list[i] === obj) {
-      found = true;
+      found = true
     } else {
-      result.push(list[i]);
+      result.push(list[i])
     }
   }
 
   // return the new array
-  return result;
-};
+  return result
+}
 
 // Removes all listeners, or those of the specified event. It's not a
 // good idea to remove listeners that were added elsewhere in the code,
 // especially when it's on an emitter that you didn't create (e.g. sockets
 // or file streams).
 // Returns emitter, so calls can be chained.
-EventEmitter.prototype.off = function(eventName, listener) {
-  var self = this;
+EventEmitter.prototype.off = (eventName, listener) => {
+  const self = this
   if (eventName) {
     if (typeof listener === 'function') {
       // its a bit more tricky - we have to iterate over the arrays and only
       // clone listeners not equal to
       if (typeof self._eventEmitter.onListeners[eventName] !== 'undefined') {
-        self._eventEmitter.onListeners[eventName] = _withoutOne(self._eventEmitter.onListeners[eventName], listener);
+        self._eventEmitter.onListeners[eventName] = _withoutOne(self._eventEmitter.onListeners[eventName], listener)
 
       }
       if (typeof self._eventEmitter.onceListeners[eventName] !== 'undefined') {
-        self._eventEmitter.onceListeners[eventName] = _withoutOne(self._eventEmitter.onceListeners[eventName], listener);
+        self._eventEmitter.onceListeners[eventName] = _withoutOne(self._eventEmitter.onceListeners[eventName], listener)
 
       }
     } else {
       // Remove all listeners for eventName
-      self._eventEmitter.onListeners[eventName] = [];
-      self._eventEmitter.onceListeners[eventName] = [];
+      self._eventEmitter.onListeners[eventName] = []
+      self._eventEmitter.onceListeners[eventName] = []
     }
 
   } else {
     // Remove all listeners
-    self._eventEmitter.onListeners = {};
-    self._eventEmitter.onceListeners = {};
+    self._eventEmitter.onListeners = {}
+    self._eventEmitter.onceListeners = {}
   }
-};
+}
 
 // Add api helpers
-EventEmitter.prototype.addListener = EventEmitter.prototype.on;
-EventEmitter.prototype.removeListener = EventEmitter.prototype.off;
-EventEmitter.prototype.removeAllListeners = EventEmitter.prototype.off;
+EventEmitter.prototype.addListener = EventEmitter.prototype.on
+EventEmitter.prototype.removeListener = EventEmitter.prototype.off
+EventEmitter.prototype.removeAllListeners = EventEmitter.prototype.off
 
 // Add jquery like helpers
-EventEmitter.prototype.one = EventEmitter.prototype.once;
-EventEmitter.prototype.trigger = EventEmitter.prototype.emit;
+EventEmitter.prototype.one = EventEmitter.prototype.once
+EventEmitter.prototype.trigger = EventEmitter.prototype.emit
+
+export default EventEmitter
